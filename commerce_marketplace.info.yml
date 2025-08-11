@@ -1,0 +1,34 @@
+name: Commerce Marketplace
+type: module
+description: Implements multiple stores/store owners model.
+core_version_requirement: ^8 || ^9 || ^10 || ^11
+package: Commerce (contrib)
+configure: commerce_marketplace.admin
+dependencies:
+  - commerce:commerce_product
+  - commerce:commerce_cart
+  - commerce:commerce_tax
+  - commerce:commerce_store (>=8.x-2.16)
+  - commerce_shipping:commerce_shipping
+config_devel:
+  install:
+    - user.role.commerce_marketplace_owner
+    - user.role.commerce_marketplace_admin
+    - system.action.commerce_marketplace_mark_as_default
+    - system.action.commerce_marketplace_mark_as_owner_default
+    - system.action.commerce_marketplace_increase_owner_limit_by_one
+    - system.action.commerce_marketplace_increase_store_limit_by_one
+    - system.action.commerce_marketplace_set_owner_limit_to_one
+    - system.action.commerce_marketplace_set_store_limit_to_one
+    - system.action.commerce_marketplace_clear_owner_store_limit
+    - system.action.commerce_marketplace_clear_store_type_limit
+    - field.formatter.settings.commerce_marketplace_name
+    - field.formatter.settings.commerce_marketplace_type_label
+    - field.formatter.settings.commerce_marketplace_label_compact
+    - field.formatter.settings.commerce_marketplace_list_compact
+    - views.view.commerce_marketplace_administer_stores
+    - views.view.commerce_marketplace_administer_products
+    - views.view.commerce_marketplace_store_orders
+    - views.view.commerce_marketplace_administer_shipping_methods
+  optional:
+    - commerce_marketplace.settings
