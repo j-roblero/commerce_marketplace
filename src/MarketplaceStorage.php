@@ -42,52 +42,64 @@ class MarketplaceStorage extends StoreStorage {
   /**
    * {@inheritdoc}
    */
-  public function loadDefault(AccountInterface $user = NULL) {
-    $default = NULL;
-    if ($uid = $this->getCurrentUserId($user)) {
-      $config = $this->configFactory->get('commerce_marketplace.settings');
-      $uuid = $config->get("owners.{$uid}.default_store");
-      $ids = parent::getQuery()->condition('uid', $uid)->execute();
-    }
-    elseif ($default_store = parent::loadDefault()) {
-      $uuid = $default_store->uuid();
-      $ids = parent::getQuery()->execute();
-    }
+public function loadDefault(AccountInterface $user = NULL) {
+  $default = NULL;
+  $uuid = NULL;   // Evita "undefined variable".
+  $ids = [];      // Evita "undefined variable".
 
-    if (!empty($ids)) {
-      $stores = parent::loadMultiple($ids);
-      if ($uuid) {
-        foreach ($stores as $store) {
-          if ($store->uuid() == $uuid) {
-            $default = $store;
-            break;
-          }
+  if ($uid = $this->getCurrentUserId($user)) {
+    $config = $this->configFactory->get('commerce_marketplace.settings');
+    $uuid = $config->get("owners.{$uid}.default_store");
+
+    // D10.2+: toda EntityQuery debe indicar accessCheck.
+    $ids = parent::getQuery()
+      ->accessCheck(FALSE)
+      ->condition('uid', $uid)
+      ->execute();
+  }
+  elseif ($default_store = parent::loadDefault()) {
+    $uuid = $default_store->uuid();
+
+    $ids = parent::getQuery()
+      ->accessCheck(FALSE)
+      ->execute();
+  }
+
+  if (!empty($ids)) {
+    $stores = parent::loadMultiple($ids);
+    if ($uuid) {
+      foreach ($stores as $store) {
+        if ($store->uuid() === $uuid) {
+          $default = $store;
+          break;
         }
-      }
-      else {
-        $store = end($stores);
       }
     }
     else {
-      $stores = parent::loadMultiple();
+      // “Última encontrada” como fallback.
+      $store = end($stores);
     }
-
-    if (!$default && isset($store)) {
-      // This is the case when previously assigned default store was
-      // deleted, so we need to return at least the last found store.
-      $default = $store;
-      $default->enforceIsNew();
-      if (count($stores) > 1) {
-        $this->messenger()->addWarning(t('No one default store is assigned yet. Note that it is recommended to have one explicitly assigned otherwise the last found store will be dimmed as the default. This may lead to unexpected behaviour.'), FALSE);
-      }
-    }
-    elseif (!$default && $stores) {
-      // As a last resort let's return the first store in the list.
-      $default = reset($stores);
-    }
-
-    return $default;
   }
+  else {
+    // Sin filtros: carga todas (esto NO usa entity query).
+    $stores = parent::loadMultiple();
+  }
+
+  if (!$default && isset($store)) {
+    // Si la “por defecto” asignada fue eliminada, devolver al menos la última.
+    $default = $store;
+    $default->enforceIsNew();
+    if (count($stores) > 1) {
+      $this->messenger()->addWarning(t('No one default store is assigned yet. Note that it is recommended to have one explicitly assigned otherwise the last found store will be dimmed as the default. This may lead to unexpected behaviour.'), FALSE);
+    }
+  }
+  elseif (!$default && !empty($stores)) {
+    // Último recurso: la primera de la lista.
+    $default = reset($stores);
+  }
+
+  return $default;
+}
 
   /**
    * {@inheritdoc}
