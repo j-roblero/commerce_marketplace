@@ -107,7 +107,10 @@ public function loadDefault(AccountInterface $user = NULL) {
   public function loadMultiple(array $ids = NULL, AccountInterface $user = NULL) {
     $stores = [];
     if (!$ids && $user) {
-      $ids = parent::getQuery()->condition('uid', $user->id())->execute();
+      $ids = parent::getQuery()
+        ->accessCheck(FALSE)
+        ->condition('uid', $user->id())
+        ->execute();
     }
     elseif (!$ids) {
       $ids = $this->getQuery()->execute();
@@ -124,7 +127,7 @@ public function loadDefault(AccountInterface $user = NULL) {
    * {@inheritdoc}
    */
   public function getQuery($conjunction = 'AND') {
-    $query = parent::getQuery($conjunction);
+    $query = parent::getQuery($conjunction)->accessCheck(FALSE);
 
     // If the current user is not an admin ($uid === FALSE) we restrict the
     // query to the stores owned by the user or, if the $uid === 0, return the
